@@ -15,7 +15,8 @@
           v-on:pintura:updateshape="handleEditorUpdateshape($event)"
           v-on:pintura:process="handleEditorProcess($event)"
           :imageAnnotation="imageAnnotation"
-
+          :utils="['sticker', 'annotate', 'resize']"
+          :beforeUpdateShape="beforeUpdateShape"
       ></PinturaEditor>
 
     </div>
@@ -24,17 +25,14 @@
 <script>
 // Import the editor default configuration
 import { PinturaEditor } from '@pqina/vue-pintura';
-import { getEditorDefaults,  plugin_frame_defaults, overlayEditor} from '@pqina/pintura';
+import { getEditorDefaults,  plugin_frame_defaults} from '@pqina/pintura';
 import * as faceapi from 'face-api.js'
+import * as child_process from "child_process";
 
 
 // get defaults
 const { frameOptions, frameStyles } = plugin_frame_defaults;
 
-overlayEditor('.my-editor', {
-  src: 'image.jpeg',
-  /* options here */
-});
 
 
 export default {
@@ -64,22 +62,6 @@ export default {
         ...frameStyles,
 
         // Our custom frame style
-        myFrame: {
-          // The default shape styles for our frame
-          imageFrame: {
-            frameStyle: 'nine',
-            frameImage: 'src/assets/frame.png',
-            frameSlices: {
-              x1: 0.2, // red
-              y1: 0.2, // green
-              x2: 0.8, // blue
-              y2: 0.8, // yellow
-            },
-
-          },
-
-          // The thumbnail to show in the toolbar
-        },
       },
 
 
@@ -119,7 +101,7 @@ export default {
       //     ];
       //   },
       // ],
-
+        originalFile: '',
         image: null,
         imageHeight: 100, // Set the initial sticker width
         imageWidth: 100, // Set the initial sticker height
@@ -127,10 +109,7 @@ export default {
       // Pass the editor default configuration options
       editorDefaults: getEditorDefaults({
         imageWriter: {
-          targetSize: {
-            width: 1024,
-            height: 768
-          },
+
           postprocessImageData: (imageData) =>
               new Promise((resolve, reject) => {
                 // Create a canvas element to handle the imageData
@@ -176,25 +155,27 @@ export default {
         },
       }),
       imageAnnotation: [
-        // a red square
+        // fire border
         {
           x: 0,
           y: 0,
           width: '100%',
           height: '100%',
-          backgroundImage: 'src/assets/frame.png',
+          backgroundImage: 'src/assets/frame-final.png',
           alwaysOnTop:true,
+          backgroundSize:'contain'
+
         },
         {
-          x: "5%",
-          y: "60%",
-          width: 200,
-          height: 200,
+          id: 'original-photo',
+          x: "15%",
+          y: "61.5%",
+          width: 152,
+          height: 180,
           backgroundColor: [1, 1, 1],
-          alwaysOnTop:true,
-          strokeColor: 1,
-          strokeWidth: 5,
-          rotation:  Math.PI / 2.5,
+          backgroundImage: '',
+          alwaysOnTop:false,
+          rotation:  Math.PI / -17,
         },
       ],
 
@@ -266,12 +247,6 @@ export default {
           height: 400,
           alt: 'sticker-ten',
         },
-        {
-          src: 'src/assets/frame.png',
-          width: 400,
-          height: 400,
-          alt: 'sticker-11',
-        },
       ],
       stickerImage: 'src/assets/rug.png',
       imageCropAspectRatio: 1,
@@ -320,6 +295,17 @@ export default {
     },
     handleEditorUpdateshape: function (shape) {
       console.log('updateshape', shape);
+      if(shape.detail.id === "original-photo"){
+        this.selectFile();
+        this.imageAnnotation[1].backgroundImage = 'src/asset/face.jpg';
+        this.imageAnnotation[1].backgroundColor = null;
+        // shape.detail.backgroundImage = this.originalFile;
+
+        return shape;
+      }
+    },
+    beforeUpdateShape: (shape, props, context) => {
+      console.log('beforeUpdateShape', shape, props, context);
     },
     handleEditorProcess: function (imageState) {
       console.log(imageState, '313');
@@ -348,14 +334,42 @@ export default {
         URL.revokeObjectURL(link.href);
         link.parentNode.removeChild(link);
       }, 0);
+    },
+    selectFile: function () {
+      // Create a hidden link and set the URL using createObjectURL
+      const input = document.createElement('input');
+      input.style.display = 'none';
+      input.type = 'file'
+      // We need to add the link to the DOM for "click()" to work
+      document.body.appendChild(input);
+      input.click();
+
+      input.addEventListener('change',() => {
+        console.log(input.files[0],'357');
+        const file = input.files[0];
+          // Create a URL for the selected image
+          const imageURL = URL.createObjectURL(file);
+
+          // Display the image in the <img> element
+
+
+
+
+      })
+
+      // To make this work on Firefox we need to wait a short moment before clean up
+      setTimeout(() => {
+        URL.revokeObjectURL(input.href);
+        input.parentNode.removeChild(input);
+      }, 0);
     }
 
 
   },
   mounted() {
     const blankImage = document.createElement('canvas');
-    blankImage.width = 1024;
-    blankImage.height = 768;
+    blankImage.width = 736;
+    blankImage.height = 736;
 
     // The default <canvas> is transparent, let's make it white
     const imageContext = blankImage.getContext('2d');
@@ -385,14 +399,6 @@ export default {
   display: none;
 }
 
-.canvasOverlay {
-  height: 85%;
-  width: 100%;
-  position: absolute;
-  z-index: 99;
-  border: 1px solid red;
-
-}
 .pinturaContainer {
 
   height: 100vh;
@@ -403,9 +409,6 @@ export default {
   height: 100vh;
   width: 100%;
 }
-.my-editor{
-  width: 1024px;
-  height: 768px;
-}
+
 </style>
 
