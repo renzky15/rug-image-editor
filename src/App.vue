@@ -129,11 +129,13 @@ export default {
         imageWriter: {
           targetSize: {
             width: 1024,
-            height: 768
+            height: 768,
+            fit: 'contain'
           },
           postprocessImageData: (imageData) =>
               new Promise((resolve, reject) => {
                 // Create a canvas element to handle the imageData
+
                 const canvas = document.createElement('canvas');
                 canvas.width = imageData.width;
                 canvas.height = imageData.height;
@@ -144,19 +146,19 @@ export default {
                 const watermark = new Image();
                 watermark.onload = () => {
                   // how to draw the image to the canvas
-                  ctx.globalCompositeOperation = 'screen';
+                  // ctx.globalCompositeOperation = 'screen';
 
                   // draw the watermark in the top right corner
                   ctx.drawImage(
                       watermark,
 
                       // the watermark x and y position
-                      imageData.width - 100 - 20,
-                      20,
+                      350,
+                      140,
 
                       // the watermark width and height
-                      600,
-                      600
+                      400,
+                      400
                   );
 
                   // Get and return the modified imageData
@@ -171,7 +173,7 @@ export default {
                 };
                 watermark.onerror = reject;
                 watermark.crossOrigin = 'Anonymous';
-                watermark.src = '/img/watermark.png';
+                watermark.src = '/img/watermark.svg';
               }),
         },
       }),
@@ -182,20 +184,11 @@ export default {
           y: 0,
           width: '100%',
           height: '100%',
-          backgroundImage: 'src/assets/frame.png',
+          backgroundImage: 'src/assets/frame-final.png',
           alwaysOnTop:true,
+          backgroundSize:'contain'
         },
-        {
-          x: "5%",
-          y: "60%",
-          width: 200,
-          height: 200,
-          backgroundColor: [1, 1, 1],
-          alwaysOnTop:true,
-          strokeColor: 1,
-          strokeWidth: 5,
-          rotation:  Math.PI / 2.5,
-        },
+        
       ],
 
       imageFrame: {
